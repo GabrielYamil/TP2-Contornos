@@ -1,183 +1,90 @@
-import cv2
-from cargar_referencias import contornos_referencia
+"""Proyecto 1: deteccion y clasificacion de contornos con matchShapes."""
 
-def nothing(x):
+import cv2
+
+from cargar_referencias import contornos_referencia
+from vision import crear_mascara, contornos_validos
+
+
+def nada(_):
     pass
 
-cap = cv2.VideoCapture(0)
 
-cv2.namedWindow("Threshold")
-cv2.namedWindow("Controles")
+def main():
+    if not contornos_referencia:
+        raise RuntimeError("No se pudieron cargar los contornos de referencia.")
 
-cv2.createTrackbar("Umbral", "Threshold", 127, 255, nothing)
-cv2.createTrackbar("Kernel", "Threshold", 1, 20, nothing)
-cv2.createTrackbar("Area Minima", "Controles", 500, 50000, nothing)
-cv2.createTrackbar("Distancia Maxima", "Controles", 10, 100, nothing)
+    camara = cv2.VideoCapture(0)
+    if not camara.isOpened():
+        raise RuntimeError("No se pudo abrir la webcam.")
 
-while cap.isOpened():
+    cv2.namedWindow("Controles P1")
+    cv2.createTrackbar("Umbral", "Controles P1", 127, 255, nada)
+    cv2.createTrackbar("Kernel", "Controles P1", 1, 20, nada)
+    cv2.createTrackbar("Area minima", "Controles P1", 500, 50000, nada)
+    cv2.createTrackbar("Distancia maxima", "Controles P1", 10, 100, nada)
 
-    ret, frame = cap.read()
-
-    if not ret:
-        print("No se pudo obtener la imagen de la cámara.")
-        break
-
-    frame = cv2.flip(frame, 1)
-
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    threshold_value = cv2.getTrackbarPos("Umbral", "Threshold")
-
-    _, binary = cv2.threshold(
-        gray,
-        threshold_value,
-        255,
-        cv2.THRESH_BINARY
-    )
-
-    Kernel_size = cv2.getTrackbarPos(
-        "Kernel",
-        "Threshold"
-    )
-
-    if Kernel_size < 1:
-       Kernel_size = 1
-
-    kernel = cv2.getStructuringElement(
-        cv2.MORPH_RECT,
-        (Kernel_size, Kernel_size)
-    )
-
-    morphed = cv2.morphologyEx(
-        binary,
-        cv2.MORPH_OPEN,
-        kernel
-    )
-
-    contours, hierarchy = cv2.findContours(
-        morphed,
-        cv2.RETR_EXTERNAL,
-        cv2.CHAIN_APPROX_SIMPLE
-    )
-
-    min_area = cv2.getTrackbarPos(
-        "Area Minima",
-        "Controles"
-    )
-
-    if min_area < 1:
-        min_area = 1
-
-    filtered_contours = []
-
-    for contour in contours:
-        area = cv2.contourArea(contour)
-
-        if area >= min_area:
-            filtered_contours.append(contour)
-
-    distancia_slider = cv2.getTrackbarPos(
-        "Distancia Maxima",
-        "Controles"
-    )
-
-    distancia_maxima = distancia_slider / 100.0
-
-    for contour in filtered_contours:
-
-        mejor_nombre = "desconocido"
-        mejor_distancia = float('inf')
-
-        for nombre, referencia in contornos_referencia.items():
-
-            distancia = cv2.matchShapes(
-                contour,
-                referencia,
-                cv2.CONTOURS_MATCH_I1,
-                0.0
+    try:
+        while True:
+            ok, frame = camara.read()
+            if not ok:
+                print("No se pudo obtener la imagen de la camara.")
+                break
+            frame = cv2.flip(frame, 1)
+            gris, binaria, mascara = crear_mascara(
+                frame,
+                cv2.getTrackbarPos("Umbral", "Controles P1"),
+                cv2.getTrackbarPos("Kernel", "Controles P1"),
             )
-
-            if distancia < mejor_distancia:
-
-                mejor_distancia = distancia
-                mejor_nombre = nombre
-
-        if mejor_distancia <= distancia_maxima:
-
-            texto = (
-                f"{mejor_nombre}"
-                f"({mejor_distancia:.3f})"
+            contornos = contornos_validos(
+                mascara, cv2.getTrackbarPos("Area minima", "Controles P1")
             )
+            distancia_maxima = cv2.getTrackbarPos(
+                "Distancia maxima", "Controles P1"
+            ) / 100.0
 
-            color = (0, 255, 0)
+            for contorno in contornos:
+                distancias = {
+                    nombre: cv2.matchShapes(
+                        contorno, referencia, cv2.CONTOURS_MATCH_I1, 0.0
+                    )
+                    for nombre, referencia in contornos_referencia.items()
+                }
+                nombre, distancia = min(distancias.items(), key=lambda item: item[1])
+                reconocido = distancia <= distancia_maxima
+                texto = f"{nombre} ({distancia:.3f})" if reconocido else "desconocido"
+                color = (0, 255, 0) if reconocido else (0, 0, 255)
+                x, y, ancho, alto = cv2.boundingRect(contorno)
+                cv2.rectangle(frame, (x, y), (x + ancho, y + alto), color, 2)
+                cv2.putText(
+                    frame,
+                    texto,
+                    (x, max(22, y - 8)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    color,
+                    2,
+                )
 
-        else:
-
-            mejor_nombre = "desconocido"
-
-            texto = (
-                f"desconocido"
-                f"({mejor_distancia:.3f})"
+            cv2.putText(
+                frame,
+                f"Distancia maxima: {distancia_maxima:.2f}",
+                (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (255, 255, 255),
+                2,
             )
-
-            color = (0, 0, 255)
-
-
-        x, y, w, h = cv2.boundingRect(contour)
-
-        cv2.rectangle(
-            frame,
-            (x, y),
-            (x + w, y + h),
-            color,
-            2
-        )
-
-        cv2.putText(
-            frame,
-            texto,
-            (x, max(y - 10, 20)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            color,
-            2
-        )
-
-        cv2.putText(
-            frame,
-            f"Distancia Maxima: {distancia_maxima:.3f}",
-            (10, 30),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (255, 255, 255),
-            2
-        )
-
-        cv2.imshow(
-            "Imagen original",
-            frame
-        )
-
-        cv2.imshow(
-            "Imagen en escala de grises",
-            gray
-        )
-
-        cv2.imshow(
-            "Threshold",
-            binary
-        )
-
-        cv2.imshow(
-            "Morfologia",
-            morphed
-        )
+            cv2.imshow("Proyecto 1 - matchShapes", frame)
+            cv2.imshow("Proyecto 1 - Gris", gris)
+            cv2.imshow("Proyecto 1 - Binaria", binaria)
+            cv2.imshow("Proyecto 1 - Morfologia", mascara)
+            if cv2.waitKey(1) & 0xFF == 27:
+                break
+    finally:
+        camara.release()
+        cv2.destroyAllWindows()
 
 
-
-    if cv2.waitKey(1) & 0xFF == 27:
-        break
-
-
-cap.release()
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    main()
