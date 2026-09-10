@@ -37,9 +37,9 @@ Archivos propios del Proyecto 1:
 - `crear_referencias.py`: vuelve a generar las imágenes de referencia si fuera necesario.
 - `referencias/`: círculo, cuadrado y triángulo de referencia.
 
-Los controles permiten ajustar el umbral, el kernel morfológico, el área mínima y la distancia máxima aceptada.
+Los controles permiten ajustar el umbral, el kernel morfológico, el área mínima, la distancia máxima aceptada y la inversión de la máscara.
 
-Para una prueba sencilla, usar figuras claras sobre un fondo oscuro. En la ventana binaria, la figura debe verse blanca y el fondo negro. `Esc` cierra la aplicación.
+En la ventana binaria, la figura debe verse blanca y el fondo negro. Usar `Invertir = 0` para una figura clara sobre fondo oscuro y `Invertir = 1` para una figura oscura sobre fondo claro. Los contornos que tocan el borde se descartan para evitar reconocer el fondo completo. `Esc` cierra la aplicación.
 
 ## Proyecto 2 — Machine learning
 

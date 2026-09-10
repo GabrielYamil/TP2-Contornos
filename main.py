@@ -27,6 +27,7 @@ def main():
     cv2.createTrackbar("Kernel", "Controles P1", 1, 20, nada)
     cv2.createTrackbar("Area minima", "Controles P1", 500, 50000, nada)
     cv2.createTrackbar("Distancia maxima", "Controles P1", 10, 100, nada)
+    cv2.createTrackbar("Invertir", "Controles P1", 0, 1, nada)
 
     try:
         while True:
@@ -41,10 +42,13 @@ def main():
                 frame,
                 cv2.getTrackbarPos("Umbral", "Controles P1"),
                 cv2.getTrackbarPos("Kernel", "Controles P1"),
+                bool(cv2.getTrackbarPos("Invertir", "Controles P1")),
             )
-            # Ignora contornos menores al área elegida por el usuario.
+            # Ignora contornos pequeños y el fondo que toca los bordes de la imagen.
             contornos = contornos_validos(
-                mascara, cv2.getTrackbarPos("Area minima", "Controles P1")
+                mascara,
+                cv2.getTrackbarPos("Area minima", "Controles P1"),
+                descartar_borde=True,
             )
             # La barra usa enteros; al dividir por 100 obtenemos valores decimales.
             distancia_maxima = cv2.getTrackbarPos(
@@ -87,6 +91,16 @@ def main():
                 (255, 255, 255),
                 2,
             )
+            if not contornos:
+                cv2.putText(
+                    frame,
+                    "Sin contornos: ajuste Umbral o Invertir",
+                    (10, 60),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.65,
+                    (0, 165, 255),
+                    2,
+                )
             # Muestra la salida final y los pasos intermedios del procesamiento.
             cv2.imshow("Proyecto 1 - matchShapes", frame)
             cv2.imshow("Proyecto 1 - Gris", gris)
