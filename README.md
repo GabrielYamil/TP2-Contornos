@@ -57,6 +57,8 @@ El script produce 30 imágenes de cada clase en `data/imagenes_sinteticas/` y gu
 
 Las muestras sintéticas permiten reproducir el entrenamiento rápidamente. Para evaluar el modelo con webcam conviene mantener figuras claras sobre un fondo oscuro, igual que en las imágenes generadas.
 
+El control `Invertir` permite usar también una figura oscura sobre un fondo claro. La máscara siempre debe mostrar la figura en blanco y el fondo en negro; los contornos que tocan el borde de la imagen se descartan para evitar clasificar el fondo completo.
+
 ### 1. Generar el dataset
 
 ```powershell

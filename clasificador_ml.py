@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 from joblib import load
 
-from vision import crear_mascara, contornos_validos, invariantes_hu
+from vision import crear_mascara, contornos_validos, invariantes_hu, transformar_hu
 
 
 def nada(_):
@@ -35,6 +35,7 @@ def main():
     cv2.createTrackbar("Umbral", "Controles ML", 127, 255, nada)
     cv2.createTrackbar("Kernel", "Controles ML", 1, 20, nada)
     cv2.createTrackbar("Area minima", "Controles ML", 500, 50000, nada)
+    cv2.createTrackbar("Invertir", "Controles ML", 0, 1, nada)
 
     try:
         while True:
@@ -46,12 +47,15 @@ def main():
                 frame,
                 cv2.getTrackbarPos("Umbral", "Controles ML"),
                 cv2.getTrackbarPos("Kernel", "Controles ML"),
+                bool(cv2.getTrackbarPos("Invertir", "Controles ML")),
             )
             contornos = contornos_validos(
-                mascara, cv2.getTrackbarPos("Area minima", "Controles ML")
+                mascara,
+                cv2.getTrackbarPos("Area minima", "Controles ML"),
+                descartar_borde=True,
             )
             for contorno in contornos:
-                muestra = invariantes_hu(contorno).reshape(1, -1)
+                muestra = transformar_hu(invariantes_hu(contorno)).reshape(1, -1)
                 etiqueta = int(clasificador.predict(muestra)[0])
                 confianza = float(np.max(clasificador.predict_proba(muestra)[0]))
                 nombre = etiquetas.get(etiqueta, f"etiqueta {etiqueta}")

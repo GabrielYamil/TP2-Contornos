@@ -38,14 +38,24 @@ def main():
     cv2.createTrackbar("Umbral", "Controles", 127, 255, nada)
     cv2.createTrackbar("Kernel", "Controles", 1, 20, nada)
     cv2.createTrackbar("Area minima", "Controles", 500, 50000, nada)
+    cv2.createTrackbar("Invertir", "Controles", 0, 1, nada)
     print("Teclas: 1-3 etiqueta; ESPACIO guarda el contorno mayor; ESC sale.")
     try:
         while True:
             ok, frame = camara.read()
             if not ok: break
             frame = cv2.flip(frame, 1)
-            gris, binaria, mascara = crear_mascara(frame, cv2.getTrackbarPos("Umbral", "Controles"), cv2.getTrackbarPos("Kernel", "Controles"))
-            contornos = contornos_validos(mascara, cv2.getTrackbarPos("Area minima", "Controles"))
+            gris, binaria, mascara = crear_mascara(
+                frame,
+                cv2.getTrackbarPos("Umbral", "Controles"),
+                cv2.getTrackbarPos("Kernel", "Controles"),
+                bool(cv2.getTrackbarPos("Invertir", "Controles")),
+            )
+            contornos = contornos_validos(
+                mascara,
+                cv2.getTrackbarPos("Area minima", "Controles"),
+                descartar_borde=True,
+            )
             mayor = max(contornos, key=cv2.contourArea, default=None)
             cv2.putText(frame, f"Etiqueta {etiqueta}: {ETIQUETAS[etiqueta]} | Espacio: guardar", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, .6, (0, 255, 255), 2)
             if mayor is not None: cv2.drawContours(frame, [mayor], -1, (0, 255, 0), 2)
