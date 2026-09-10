@@ -2,11 +2,13 @@ import cv2
 import numpy as np
 import os
 
+# Crea la carpeta donde el Proyecto 1 busca las imágenes conocidas.
 os.makedirs("referencias", exist_ok=True)
 
 width = 400
 height = 400
 
+# Cada referencia comienza como una imagen completamente blanca.
 triangulo = np.ones((height, width), dtype=np.uint8) * 255
 
 punts = np.array([
@@ -15,10 +17,12 @@ punts = np.array([
     [320, 300]
 ])
 
+# La figura se dibuja rellena y en color negro.
 cv2.fillPoly(triangulo, [punts], 0)
 
 cv2.imwrite("referencias/triangulo.png", triangulo)
 
+# Genera la referencia del cuadrado.
 cuadrado = np.ones((height, width), dtype=np.uint8) * 255
 
 cv2.rectangle(
@@ -32,6 +36,7 @@ cv2.rectangle(
 cv2.imwrite("referencias/cuadrado.png", cuadrado)
 
 
+# Genera la referencia del círculo.
 circulo = np.ones((height, width), dtype=np.uint8) * 255
 
 cv2.circle(

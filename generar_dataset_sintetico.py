@@ -16,6 +16,7 @@ ALTO = 480
 
 
 def punto_rotado(centro, radio, angulo):
+    """Calcula un vértice a una distancia y un ángulo respecto del centro."""
     radianes = np.deg2rad(angulo)
     return (
         int(centro[0] + radio * np.cos(radianes)),
@@ -24,7 +25,10 @@ def punto_rotado(centro, radio, angulo):
 
 
 def dibujar_figura(nombre, rng):
+    """Crea una silueta con variaciones aleatorias controladas."""
+    # Cada muestra comienza como una imagen completamente negra.
     imagen = np.zeros((ALTO, ANCHO), dtype=np.uint8)
+    # La posición, el tamaño y la rotación cambian en cada imagen.
     centro = (
         int(ANCHO / 2 + rng.integers(-55, 56)),
         int(ALTO / 2 + rng.integers(-55, 56)),
@@ -32,6 +36,7 @@ def dibujar_figura(nombre, rng):
     tamano = int(rng.integers(85, 151))
     angulo = float(rng.uniform(0, 360))
 
+    # Las pequeñas variaciones de proporción evitan generar copias idénticas.
     if nombre == "circulo":
         proporcion = float(rng.uniform(0.92, 1.08))
         ejes = (tamano, max(1, int(tamano * proporcion)))
@@ -64,6 +69,7 @@ def dibujar_figura(nombre, rng):
 
 
 def contorno_principal(imagen):
+    """Devuelve el contorno de mayor área de una imagen sintética."""
     contornos, _ = cv2.findContours(imagen, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contornos:
         raise RuntimeError("No se pudo extraer el contorno de una imagen sintética.")
@@ -71,6 +77,7 @@ def contorno_principal(imagen):
 
 
 def main():
+    # Por defecto se generan 30 muestras reproducibles de cada forma.
     parser = argparse.ArgumentParser(description="Generador automático del dataset")
     parser.add_argument("--cantidad", type=int, default=30, help="muestras por clase")
     parser.add_argument("--salida", default="data/dataset.csv")
@@ -80,6 +87,7 @@ def main():
     if args.cantidad < 2:
         raise ValueError("Se necesitan al menos dos muestras por clase.")
 
+    # La semilla permite volver a generar exactamente el mismo dataset.
     rng = np.random.default_rng(args.semilla)
     salida = Path(args.salida)
     carpeta_imagenes = Path(args.imagenes)
@@ -87,6 +95,7 @@ def main():
     carpeta_imagenes.mkdir(parents=True, exist_ok=True)
 
     filas = []
+    # Cada carpeta representa una clase y cada imagen produce una fila del CSV.
     for etiqueta, nombre in ETIQUETAS.items():
         carpeta_clase = carpeta_imagenes / nombre
         carpeta_clase.mkdir(parents=True, exist_ok=True)
@@ -95,9 +104,11 @@ def main():
             ruta_imagen = carpeta_clase / f"{nombre}_{numero:03d}.png"
             if not cv2.imwrite(str(ruta_imagen), imagen):
                 raise RuntimeError(f"No se pudo guardar {ruta_imagen}")
+            # La muestra contiene siete invariantes y la etiqueta correcta.
             hu = invariantes_hu(contorno_principal(imagen))
             filas.append([*hu.tolist(), etiqueta])
 
+    # Se mezclan las clases antes de guardar el dataset.
     rng.shuffle(filas)
     with salida.open("w", newline="", encoding="utf-8") as archivo:
         escritor = csv.writer(archivo)

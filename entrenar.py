@@ -15,39 +15,48 @@ from vision import transformar_hu
 
 
 def cargar_dataset(ruta):
+    """Carga del CSV la matriz de características X y las etiquetas y."""
     with ruta.open(newline="", encoding="utf-8") as archivo:
         filas = list(csv.DictReader(archivo))
     if not filas:
         raise ValueError("Dataset vacío: ejecute generar_descriptores.py.")
+    # X contiene siete invariantes por muestra; y contiene su clase correcta.
     x = np.array([[float(f[f"hu{i}"]) for i in range(1, 8)] for f in filas])
     y = np.array([int(f["etiqueta"]) for f in filas])
+    # El árbol se entrena con Hu en escala logarítmica para reducir la sensibilidad.
     return transformar_hu(x), y
 
 
 def nuevo_clasificador():
+    """Construye siempre un árbol con la misma configuración."""
     return tree.DecisionTreeClassifier(
         random_state=42, max_depth=5, min_samples_leaf=2
     )
 
 
 def main():
+    # Permite elegir otro dataset o destino desde la línea de comandos.
     parser = argparse.ArgumentParser(description="Entrenador de clasificador de contornos")
     parser.add_argument("--dataset", default="data/dataset.csv")
     parser.add_argument("--modelo", default="modelos/clasificador_hu.joblib")
     args = parser.parse_args()
     x, y = cargar_dataset(Path(args.dataset))
+    # Se comprueba que existan suficientes ejemplos de las tres formas.
     clases = Counter(y)
     if len(clases) < 3 or any(n < 2 for n in clases.values()):
         raise ValueError("Se requieren al menos tres clases y dos muestras por clase.")
     if len(y) >= 12 and min(clases.values()) >= 3:
+        # Se reserva el 25 % para medir el rendimiento con muestras no entrenadas.
         x_ent, x_prueba, y_ent, y_prueba = train_test_split(
             x, y, test_size=0.25, random_state=42, stratify=y
         )
         evaluacion = nuevo_clasificador().fit(x_ent, y_ent)
         print(f"Exactitud de validación: {evaluacion.score(x_prueba, y_prueba):.1%}")
+    # El modelo definitivo aprovecha todas las muestras disponibles.
     clasificador = nuevo_clasificador().fit(x, y)
     destino = Path(args.modelo)
     destino.parent.mkdir(parents=True, exist_ok=True)
+    # Joblib conserva el árbol, las etiquetas y la transformación utilizada.
     dump(
         {
             "clasificador": clasificador,
