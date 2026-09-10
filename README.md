@@ -45,6 +45,18 @@ Para una prueba sencilla, usar figuras claras sobre un fondo oscuro. En la venta
 
 El Proyecto 2 reemplaza `matchShapes` por un árbol de decisión entrenado con los siete invariantes de Hu. Consta de las tres aplicaciones independientes solicitadas.
 
+### Opción rápida: dataset sintético
+
+Para crear automáticamente imágenes variadas y un dataset equilibrado, ejecutar:
+
+```powershell
+python generar_dataset_sintetico.py
+```
+
+El script produce 30 imágenes de cada clase en `data/imagenes_sinteticas/` y guarda sus 90 descriptores en `data/dataset.csv`. Las figuras tienen variaciones de posición, tamaño, rotación, proporción, desenfoque y morfología. Luego se puede continuar directamente con `python entrenar.py`.
+
+Las muestras sintéticas permiten reproducir el entrenamiento rápidamente. Para evaluar el modelo con webcam conviene mantener figuras claras sobre un fondo oscuro, igual que en las imágenes generadas.
+
 ### 1. Generar el dataset
 
 ```powershell
